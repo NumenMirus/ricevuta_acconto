@@ -9,7 +9,7 @@ from docx.shared import Mm
 from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn
 
-def insertHR(paragraph):
+def insertHR(paragraph, size, space):
     p = paragraph._p  # p is the <w:p> XML element
     pPr = p.get_or_add_pPr()
     pBdr = OxmlElement('w:pBdr')
@@ -24,8 +24,8 @@ def insertHR(paragraph):
     )
     bottom = OxmlElement('w:bottom')
     bottom.set(qn('w:val'), 'single')
-    bottom.set(qn('w:sz'), '6')
-    bottom.set(qn('w:space'), '1')
+    bottom.set(qn('w:sz'), str(size))
+    bottom.set(qn('w:space'), str(space))
     bottom.set(qn('w:color'), 'auto')
     pBdr.append(bottom)
 
@@ -57,13 +57,29 @@ p3.add_run("Milano 15 Giugno 2021\n")
 p3.add_run("Ricevo dalla Società la LUSac srl le somme sotto specificate a fronte delle prestazioni rientranti in rapporto di prestazione di lavoro autonomo occasionale*\n")
 
 
-p4 = d.add_paragraph()
-p4.alignment = 1
-run = p4.add_run("Tipologia della prestazione")
-run.font.size = Pt(12)
-run.font.name = 'Arial'
-run.bold = True
-insertHR(p4)
+table = d.add_table(1,1, style="Light List")
+table.add_column(Mm(30))
+table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+cell = table.rows[0].cells
+cell[0].text = "Tipologia della prestazione"
+cell[0].vertical_alignment = WD_TABLE_ALIGNMENT.CENTER
+cell[1].text = "costo netto cadauno"
+cell[1].horizontal_alignment = WD_TABLE_ALIGNMENT.CENTER
+cell[1].vertical_alignment = WD_TABLE_ALIGNMENT.CENTER
+
+row0 = table.rows[0]
+row0.height = Mm(10)
+
+###################################################################################
+
+item_list = 
+
+for i in len(item_list):
+
+
+
+
 
 
 # table = d.add_table(1, 1)
