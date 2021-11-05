@@ -9,6 +9,10 @@ from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Pt
 from docx.shared import RGBColor
 from docx.shared import Mm
+from generator import create_receipt
+from datetime import date
+
+path = "/home/numen/Downloads/"
 
 class StoredItem:
     quantity = int()
@@ -54,8 +58,12 @@ def itemInReceipt(item, filename):
 def addItemToWarehouse(items):
     while True:
         click.clear()
+        print("Non scrivere niente per tornare indietro\n")
         name = input("Nome prodotto da aggiungere: ")
         res = None
+
+        if name == "":
+            return
 
         for key in items:
             if items[key][0] == name:
@@ -63,6 +71,7 @@ def addItemToWarehouse(items):
         if res:
             print("Prodotto già esistente!")
             time.sleep("2")
+        
         else:
             break
         
@@ -71,12 +80,12 @@ def addItemToWarehouse(items):
     items.update({len(items)+1 : (name, price)})
     storeItems(items)
 
-def visualizeItemsInWarehouse(items):
+def visualizeItemsInWarehouse(items, wait=False):
     print("Prodotti:\n")
     for i in items:
         print("%d) %s" %(i, items[i][0]))
-    
-    input("\n\nPremi invio per tornare indietro...")
+    if wait:
+        input("\n\nPremi invio per tornare indietro...")
 
 def addItemToRecipe(items, name):
     print("Prodotti:\n")
@@ -84,17 +93,22 @@ def addItemToRecipe(items, name):
         print("%d) %s" %(i, items[i][0]))
     print("\n\n0) Indietro")
     
-    id = int(input("\nSeleziona prodotto da inserire: "))
-    if id == 0:
-        pass
-    
-    if id >= 1 and id <= len(items):
-        q = int(input("Quantità: "))
+    try:
+        id = int(input("\nSeleziona prodotto da inserire: "))
+        if id == 0:
+            pass
+        
+        if id >= 1 and id <= len(items):
+            q = int(input("Quantità: "))
 
-        item = StoredItem(q, id)
-        itemInReceipt(item, "./receipts/"+name)
+            item = StoredItem(q, id)
+            itemInReceipt(item, "./receipts/"+name)
+    except ValueError:
+        return
 
 def createReceipt(name):
+    if name == "":
+        return
     try:
         receipt = open("./receipts/"+name+".dat", mode="x")
     except FileExistsError:
@@ -123,20 +137,22 @@ def deleteReceipt(name):
         time.sleep(2)
 
 def deleteItemFromWarehouse(items):
-    print("Prodotti:\n")
-    for i in items:
-        print("%d) %s" %(i, items[i][0]))
+    
+    visualizeItemsInWarehouse(items, False)
+
     print("\n\n0) Indietro")
     
-    id = int(input("\nSeleziona prodotto da eliminare: "))
-    if id == 0:
-        pass
-    elif id >= 1 and id <= len(items):
-        deleteItemFromWarehouse(items, id)
-
-    items.pop(id)
-    storeItems(items)
-    items = getWarehouse()
+    try:
+        id = input("\nSeleziona prodotto da eliminare: ")
+        id = int(id)
+        if id == 0:
+            return
+        elif id >= 1 and id <= len(items):
+            items.pop(id)
+            storeItems(items)
+            items = getWarehouse()
+    except ValueError:
+        return
 
 def selectReceipt():
     l = os.listdir("receipts")
@@ -148,26 +164,48 @@ def selectReceipt():
             i = i+1
             print("%d)" %i+ r[:-4] )
         print("\n\n0) Indietro")
-    res = int(input("\n\nNr. della ricevuta da aprire: "))
+    try:
+        res = int(input("\n\nNr. della ricevuta da aprire: "))
 
-    if res == 0:
-        return -2
-    elif res <= len(l) and res > 0:
-        return res
-    else:
-        return -1
+        if res == 0:
+            return -2
+        elif res <= len(l) and res > 0:
+            return res
+        else:
+            return -1
+
+    except ValueError:
+        return
 
 def printRecipe(items, file, name):
-    file = open("./receipts/"+file+".dat", mode="r")
-    d = Document()
+    f = open("./receipts/"+file, mode="r")
+    file = csv.reader(f)
+    item_list = []
 
-    p1 = d.add_paragraph()
-    p1.paragraph_format.line_spacing = 1
-    p1.alignment = 1
-    p1.add_run("Sara Ezelina Vantini")
+    for line in file:
+        it = []
+        it.append(line[0])
+
+        price = int(items[int(line[1])][1])
+        item_name = items[int(line[1])][0]
+
+        it.append(price)
+        it.append(item_name)
+        item_list.append(it)
     
+    numero = input("Numero della ricevuta: ")
 
-    d.save("/home/numen/Downloads/"+name+".docx")
+    causale = input("Causale del pagamento: ")
+
+    
+    d = create_receipt(item_list, numero, causale)
+
+    if name == "":
+        name = "ricevuta_" + date.today().strftime("%d-%m-%Y")
+    d.save(path+name+".docx")
+
+    print("Stampata!")
+    time.sleep(2)
 
 def main():
     items = getWarehouse()
@@ -177,6 +215,8 @@ def main():
     choice4 = None
 
     while choice1 != 0:
+        choice1 = None
+
         click.clear()
         title()
         print("Azioni disponibili:\n")
@@ -188,6 +228,7 @@ def main():
 
     
         if choice1 == 1:
+            choice2 = None
             while choice2 != 0:
                 click.clear()
                 title()
@@ -207,14 +248,19 @@ def main():
                     visualizeReceipts()
                 elif choice2 == 3:
                     click.clear()
-                    name = input("0) Indietro\n\nNome della ricevuta da eliminare: ")
-                    if int(name) == 0:
+                    try:
+                        name = input("0) Indietro\n\nNome della ricevuta da eliminare: ")
+                        if int(name) == 0:
+                            continue
+                        deleteReceipt(name)
+                        break
+                    except ValueError:
                         continue
-                    deleteReceipt(name)
                 else:
                     pass
 
         elif choice1 == 2:
+            choice3 = None
             while choice3 != 0:
                 click.clear()
                 title()
@@ -232,30 +278,25 @@ def main():
         
                 if choice3 == 2:
                     click.clear()
-                    print("Prodotti:\n")
-                    for i in items:
-                        print("%d) %s" %(i, items[i][0]))
-                    print("\n\n0) Indietro")
-                    
-                    id = int(input("\nSeleziona prodotto da eliminare: "))
-                    if id == 0:
-                        pass
-                    elif id >= 1 and id <= len(items):
-                        deleteItemFromWarehouse(items, id)
-                        items = getWarehouse()
+                    deleteItemFromWarehouse(items)
+                    items = getWarehouse()
+
                 if choice3 == 3:
                     click.clear()
-                    visualizeReceipts()
+                    visualizeItemsInWarehouse(items, True)
                 else:
                     pass
 
         if choice1 == 3:
+            choice4 = None
             while choice4 != 0:
                 title()
                 click.clear()
                 print("Seleziona la ricevuta da aprire: \n")
 
                 r = selectReceipt()
+                if not isinstance(r, int):
+                    continue
                 
                 if r == -1:
                     click.clear()
@@ -294,6 +335,7 @@ def main():
                             printRecipe(items, recipt, name)
                         elif choice5 == 3:
                             deleteReceipt(recipt)
+                            break
                         else:
                             pass
                         
