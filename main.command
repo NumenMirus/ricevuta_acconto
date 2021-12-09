@@ -14,8 +14,8 @@ from docx.shared import Mm
 from generator import create_receipt
 from datetime import date
 
-path = "/Users/Sara/Applications/ricevuta_acconto-main/"
-savePath = "/Users/Sara/Desktop/"
+path = ""
+savePath = "/home/numen/Desktop/"
 
 
 class StoredItem:
@@ -83,7 +83,10 @@ def addItemToWarehouse(items):
         else:
             break
 
-    price = float(input("\nPrezzo: "))
+    price = input("\nPrezzo: ")
+    if "," in price:
+        price = price.replace(",", ".")
+    price = float(price)
 
     items.update({len(items) + 1: (name, price)})
     storeItems(items)
